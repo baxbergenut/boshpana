@@ -1,6 +1,6 @@
 
 CREATE TABLE users (
-    id BIGINT NOT NULL,
+    id BIGINT PRIMARY KEY,
     username VARCHAR(255),
     phone VARCHAR(20),
     full_name VARCHAR(255),
@@ -10,7 +10,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE listings (
-    id SERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     owner_id BIGINT NOT NULL REFERENCES users(id),
     status VARCHAR(20) DEFAULT 'available' 
         CHECK (status IN ('available', 'taken', 'disabled', 'pending', 'rejected')),  -- pending = awaiting moderation
@@ -58,7 +58,7 @@ CREATE TABLE listings (
 
 CREATE TABLE listing_photos (
     id SERIAL PRIMARY KEY,
-    listing_id INT REFERENCES listings(id) ON DELETE CASCADE,
+    listing_id BIGINT REFERENCES listings(id) ON DELETE CASCADE,
     telegram_file_id TEXT NOT NULL,  -- store this, retrieve image anytime
     order_index INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
