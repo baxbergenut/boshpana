@@ -11,6 +11,6 @@ async def create_pool():
     )
 
 def get_user(id):
-    print(id)
-def create_user(id):
-    print(id)
+    pass
+def create_user(id, username, full_name):
+    pass
