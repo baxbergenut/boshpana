@@ -55,13 +55,15 @@
   background: #ffffff;
   color: var(--ink);
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 6px 12px;
   border-radius: 10px;
   font-size: 12px;
   line-height: 1.2;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(0, 0, 0, 0.08);
+  min-width: 64px;
   white-space: nowrap;
+  text-align: center;
   transform: translate(-50%, -120%);
 }
 
