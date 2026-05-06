@@ -45,36 +45,33 @@
   animation: fadeUp 0.6s ease-out;
 }
 
-.priceMarker {
-  background: transparent;
-  border: none;
-}
-
-.priceTag {
+.priceTooltip {
   background: #ffffff;
   color: var(--ink);
   font-weight: 600;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 4px 8px;
+  border-radius: 10px;
   font-size: 12px;
+  line-height: 1.2;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  white-space: nowrap;
-  transform: translate(-50%, -120%);
-  position: relative;
 }
 
-.priceTag::after {
+.priceTooltip :global(strong) {
+  font-weight: 700;
+}
+
+.priceTooltip :global(br) {
+  display: block;
   content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 10px;
-  height: 10px;
-  background: #ffffff;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  transform: translateX(-50%) rotate(45deg);
+  margin-top: 2px;
+}
+
+:global(.leaflet-tooltip.priceTooltip) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 @keyframes fadeUp {

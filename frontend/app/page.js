@@ -85,15 +85,16 @@ export default function Home() {
               ? `${item.price.toLocaleString("en-US")} $`
               : "Narx kelishiladi";
           const address = item.address || item.district || "Manzil berilmagan";
-          const priceIcon = L.divIcon({
-            className: styles.priceMarker,
-            html: `<div class="${styles.priceTag}">${priceLabel}</div>`,
-          });
 
-          const marker = L.marker([item.lat, item.lon], {
-            icon: priceIcon,
-          }).addTo(markersLayer);
-          marker.bindPopup(`<strong>${priceLabel}</strong><br/>${address}`);
+          const marker = L.marker([item.lat, item.lon]).addTo(markersLayer);
+          marker
+            .bindTooltip(`<strong>${priceLabel}</strong><br/>${address}`, {
+              permanent: true,
+              direction: "top",
+              offset: [0, -16],
+              className: styles.priceTooltip,
+            })
+            .openTooltip();
           bounds.push([item.lat, item.lon]);
         });
 
