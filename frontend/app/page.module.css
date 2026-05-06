@@ -30,92 +30,51 @@
   border-radius: 0;
 }
 
-.panel {
+.floatingBadge {
   position: absolute;
-  top: 28px;
-  left: 28px;
-  width: min(420px, calc(100vw - 56px));
-  background: var(--glass);
-  backdrop-filter: blur(14px);
-  border-radius: 22px;
-  box-shadow: 0 20px 50px var(--shadow);
-  padding: 22px 24px;
+  top: 20px;
+  left: 20px;
   z-index: 1000;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px var(--shadow);
   animation: fadeUp 0.6s ease-out;
 }
 
-.panel h1 {
-  font-size: 28px;
-  letter-spacing: -1px;
-  margin: 10px 0 8px;
+.priceMarker {
+  background: transparent;
+  border: none;
 }
 
-.panel p {
-  color: var(--ink-soft);
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(31, 111, 92, 0.15);
-  color: var(--accent-2);
+.priceTag {
+  background: #ffffff;
+  color: var(--ink);
   font-weight: 600;
-  font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.label {
-  display: block;
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--ink-soft);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  transform: translate(-50%, -120%);
+  position: relative;
 }
 
-.value {
-  display: block;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.cornerCard {
+.priceTag::after {
+  content: "";
   position: absolute;
-  right: 28px;
-  bottom: 28px;
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  padding: 16px 18px;
-  border-radius: 18px;
-  box-shadow: 0 16px 40px var(--shadow);
-  width: min(240px, calc(100vw - 56px));
-  z-index: 900;
-  animation: fadeUp 0.8s ease-out;
-}
-
-.cornerCard p {
-  font-size: 14px;
-  color: var(--ink-soft);
-  margin-top: 8px;
-}
-
-.mono {
-  font-family: var(--font-mono), "SFMono-Regular", monospace;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--accent);
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 @keyframes fadeUp {
@@ -130,21 +89,8 @@
 }
 
 @media (max-width: 720px) {
-  .panel {
-    left: 16px;
-    right: 16px;
-    top: 16px;
-    width: auto;
-  }
-
-  .stats {
-    grid-template-columns: 1fr;
-  }
-
-  .cornerCard {
-    right: 16px;
-    left: 16px;
-    bottom: 16px;
-    width: auto;
+  .floatingBadge {
+    top: 12px;
+    left: 12px;
   }
 }

@@ -18,6 +18,24 @@ def _get_allowed_origins():
 
 
 @web.middleware
+async def cors_middleware(request, handler):
+    response = await handler(request)
+    allowed = _get_allowed_origins()
+    origin = request.headers.get("Origin")
+
+    if allowed == "*":
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    elif origin in allowed:
+        response.headers["Access-Control-Allow-Origin"] = origin
+
+    response.headers["Access-Control-Allow-Headers"] = (
+        "Content-Type, X-API-Key, ngrok-skip-browser-warning"
+    )
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    return response
+
+
+@web.middleware
 async def auth_middleware(request, handler):
     if request.method == "OPTIONS":
         return await handler(request)
@@ -32,22 +50,6 @@ async def auth_middleware(request, handler):
             return web.json_response({"error": "Unauthorized"}, status=401)
 
     return await handler(request)
-
-
-@web.middleware
-async def cors_middleware(request, handler):
-    response = await handler(request)
-    allowed = _get_allowed_origins()
-    origin = request.headers.get("Origin")
-
-    if allowed == "*":
-        response.headers["Access-Control-Allow-Origin"] = "*"
-    elif origin in allowed:
-        response.headers["Access-Control-Allow-Origin"] = origin
-
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-API-Key"
-    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-    return response
 
 
 async def handle_options(request):
@@ -73,7 +75,7 @@ async def handle_listings(request):
 
 
 def create_api_app(pool):
-    app = web.Application(middlewares=[auth_middleware, cors_middleware])
+    app = web.Application(middlewares=[cors_middleware, auth_middleware])
     app["pool"] = pool
     app.router.add_route("OPTIONS", "/api/listings", handle_options)
     app.router.add_get("/api/listings", handle_listings)

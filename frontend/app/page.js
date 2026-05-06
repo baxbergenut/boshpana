@@ -10,7 +10,6 @@ export default function Home() {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const [count, setCount] = useState(0);
-  const [status, setStatus] = useState("Loading listings...");
 
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +71,6 @@ export default function Home() {
 
         setCount(data.length);
         if (data.length === 0) {
-          setStatus("No listings yet.");
           return;
         }
 
@@ -82,26 +80,31 @@ export default function Home() {
             return;
           }
 
-          const price =
+          const priceLabel =
             typeof item.price === "number"
-              ? `$${item.price.toLocaleString("en-US")}`
-              : "Price on request";
-          const address = item.address || item.district || "Address hidden";
+              ? `${item.price.toLocaleString("en-US")} $`
+              : "Narx kelishiladi";
+          const address = item.address || item.district || "Manzil berilmagan";
+          const priceIcon = L.divIcon({
+            className: styles.priceMarker,
+            html: `<div class="${styles.priceTag}">${priceLabel}</div>`,
+          });
 
-          const marker = L.marker([item.lat, item.lon]).addTo(markersLayer);
-          marker.bindPopup(`<strong>${price}</strong><br/>${address}`);
+          const marker = L.marker([item.lat, item.lon], {
+            icon: priceIcon,
+          }).addTo(markersLayer);
+          marker.bindPopup(`<strong>${priceLabel}</strong><br/>${address}`);
           bounds.push([item.lat, item.lon]);
         });
 
         if (bounds.length > 0) {
           mapInstance.fitBounds(bounds, { padding: [30, 30] });
-          setStatus("Tap a pin for details.");
         }
       } catch (error) {
         if (!isMounted) {
           return;
         }
-        setStatus("Could not load listings.");
+        setCount(0);
       }
     };
 
@@ -119,30 +122,9 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <div className={styles.glow} aria-hidden />
-      <header className={styles.panel}>
-        <span className={styles.badge}>Live map</span>
-        <h1>Boshpana listings map</h1>
-        <p>
-          A live view of every available apartment. Tap a pin to see price and
-          area.
-        </p>
-        <div className={styles.stats}>
-          <div>
-            <span className={styles.label}>Listings</span>
-            <span className={styles.value}>{count}</span>
-          </div>
-          <div>
-            <span className={styles.label}>Status</span>
-            <span className={styles.value}>{status}</span>
-          </div>
-        </div>
-      </header>
+      <div className={styles.floatingBadge}>E'lonlar: {count}</div>
       <main className={styles.main}>
         <div ref={mapElRef} className={styles.map} />
-        <div className={styles.cornerCard}>
-          <span className={styles.mono}>Tip</span>
-          <p>Pin clusters will appear once you add more listings.</p>
-        </div>
       </main>
     </div>
   );

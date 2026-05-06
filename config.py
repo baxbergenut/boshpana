@@ -14,3 +14,4 @@ class config:
     API_PORT: int = int(os.getenv('API_PORT', '8081'))
     API_KEY: str = os.getenv('API_KEY', '')
     API_ALLOWED_ORIGINS: str = os.getenv('API_ALLOWED_ORIGINS', '*')
+    WEB_APP_URL: str = os.getenv('WEB_APP_URL', '')

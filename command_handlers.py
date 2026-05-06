@@ -1,9 +1,11 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from telegram.ext import ContextTypes
 from db import get_user, create_user, update_user_type, update_user_phone, update_user_fee, get_user_listings, get_listing_photos
+from config import config
 from listing_conversation import listing_conversation_handler, CREATE_LISTING_TEXT, AMENITY_LIST, TENANT_PREFS_LIST
 
 MY_LISTINGS_TEXT = "Mening e'lonlarim 📋"
+MAP_LISTINGS_TEXT = "Xaritada e'lonlar 🗺️"
 STATUS_LABELS_UZ = {
     "available": "Bo'sh",
     "taken": "Band",
@@ -31,10 +33,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
     else:
+        user_type = user["type"]
+        buttons = [[KeyboardButton(CREATE_LISTING_TEXT)], [KeyboardButton(MY_LISTINGS_TEXT)]]
+        if user_type == "tenant":
+            buttons.insert(0, [KeyboardButton(MAP_LISTINGS_TEXT)])
         await update.message.reply_text(
             "Qaytib keldingiz! 👋\n\nNima qilmoqchisiz?",
             reply_markup=ReplyKeyboardMarkup(
-                [[KeyboardButton(CREATE_LISTING_TEXT)], [KeyboardButton(MY_LISTINGS_TEXT)]],
+                buttons,
                 resize_keyboard=True,
             ),
         )
@@ -116,6 +122,13 @@ async def handle_set_type(query, context: ContextTypes.DEFAULT_TYPE, user_type: 
     await update_user_type(pool, query.from_user.id, user_type)
     if user_type in ("tenant",):
         await query.edit_message_text("Tanlovingiz saqlandi. Rahmat!")
+        await query.message.reply_text(
+            "Nima qilmoqchisiz?",
+            reply_markup=ReplyKeyboardMarkup(
+                [[KeyboardButton(MAP_LISTINGS_TEXT)]],
+                resize_keyboard=True,
+            ),
+        )
 
 async def handle_realtor_start(query, context: ContextTypes.DEFAULT_TYPE):
     pool = context.bot_data.get("pool")
@@ -170,6 +183,18 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text("Nima qilmoqchisiz?")
+
+async def handle_map_listings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not config.WEB_APP_URL:
+        await update.message.reply_text("Map sozlanmagan. Admin bilan bog'laning.")
+        return
+
+    await update.message.reply_text(
+        "Xaritani ochish uchun tugmani bosing:",
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton("Xaritani ochish", web_app=WebAppInfo(url=config.WEB_APP_URL))]]
+        ),
+    )
 
 def build_listing_caption(row):
     status_label = STATUS_LABELS_UZ.get(row["status"], row["status"])

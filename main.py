@@ -7,7 +7,9 @@ from command_handlers import (
     handle_contact,
     handle_my_listings_command,
     handle_realtor_fee,
+    handle_map_listings_command,
     MY_LISTINGS_TEXT,
+    MAP_LISTINGS_TEXT,
 )
 from listing_conversation import listing_conversation_handler
 from db import create_pool
@@ -26,10 +28,12 @@ async def main():
     app.bot_data["pool"] = pool
     
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("map", handle_map_listings_command))
     app.add_handler(CommandHandler("elonlarim", handle_my_listings_command))
     app.add_handler(listing_conversation_handler())
     app.add_handler(CallbackQueryHandler(process_callback))
     app.add_handler(MessageHandler(filters.Regex(f"^{MY_LISTINGS_TEXT}$"), handle_my_listings_command))
+    app.add_handler(MessageHandler(filters.Regex(f"^{MAP_LISTINGS_TEXT}$"), handle_map_listings_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_realtor_fee))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     
