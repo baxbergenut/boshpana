@@ -53,9 +53,14 @@ export default function Home() {
           ? `${apiBase.replace(/\/$/, "")}/api/listings`
           : "/api/listings";
 
-        const response = await fetch(endpoint, {
-          headers: apiKey ? { "x-api-key": apiKey } : {},
-        });
+        const headers = {
+          "ngrok-skip-browser-warning": "true",
+        };
+        if (apiKey) {
+          headers["x-api-key"] = apiKey;
+        }
+
+        const response = await fetch(endpoint, { headers });
         if (!response.ok) {
           throw new Error("Failed to load listings");
         }
