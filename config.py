@@ -10,3 +10,7 @@ class config:
     DB_USER: str = os.getenv('DB_USER', '')
     DB_PASSWORD: str = os.getenv('DB_PASSWORD', '')
     DB_PORT: str = os.getenv('DB_PORT', '')
+    API_HOST: str = os.getenv('API_HOST', '0.0.0.0')
+    API_PORT: int = int(os.getenv('API_PORT', '8081'))
+    API_KEY: str = os.getenv('API_KEY', '')
+    API_ALLOWED_ORIGINS: str = os.getenv('API_ALLOWED_ORIGINS', '*')

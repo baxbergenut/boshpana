@@ -7,7 +7,7 @@ from db import create_listing, insert_listing_photos
 
 # states
 # expanded to collect all fields from `listings` (except id, owner_id, status)
-PHOTOS, PRICE, PRICE_NEGOTIABLE, CURRENCY, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(18)
+PHOTOS, PRICE, PRICE_NEGOTIABLE, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(17)
 
 async def start_listing(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["listing"] = {}
@@ -80,13 +80,7 @@ async def handle_price_negotiable(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
     val = query.data
     context.user_data["listing"]["price_negotiable"] = True if val == "price_neg_yes" else False
-    await query.edit_message_text("Valyutani kiriting (3 harf, masalan: USD). Bo'sh qoldirsangiz USD qabul qilinadi.")
-    return CURRENCY
-
-async def handle_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    cur = update.message.text.strip().upper() if update.message.text else "USD"
-    context.user_data["listing"]["currency"] = cur or "USD"
-    await update.message.reply_text(
+    await query.edit_message_text(
         "Xonalar soni? 🚪",
         reply_markup=InlineKeyboardMarkup([
             [
@@ -364,7 +358,7 @@ async def show_confirmation(update, context):
 
     text = (
         f"📋 E'loningizni tekshiring:\n\n"
-        f"💵 Narx: {l.get('price')} {l.get('currency', 'USD')}\n"
+        f"💵 Narx: {l.get('price')} USD\n"
         f"💬 Muzokaraga ochiq: {('Ha' if l.get('price_negotiable') else 'Yo\'q')}\n"
         f"🚪 Xonalar: {l.get('rooms')}\n"
         f"🏢 Qavat: {l.get('floor')}/{l.get('total_floors')}\n"
@@ -426,7 +420,6 @@ def listing_conversation_handler():
             ],
             PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_price)],
             PRICE_NEGOTIABLE: [CallbackQueryHandler(handle_price_negotiable, pattern="^price_neg_")],
-            CURRENCY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_currency)],
             ROOMS: [CallbackQueryHandler(handle_rooms, pattern="^rooms_")],
             FLOOR: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_floor)],
             TOTAL_FLOORS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_total_floors)],

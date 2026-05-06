@@ -8,7 +8,8 @@ CREATE TABLE users (
     full_name VARCHAR(255),
     join_date TIMESTAMP DEFAULT NOW(),
     is_banned BOOLEAN DEFAULT FALSE,
-    type VARCHAR(20) CHECK (type IN ('tenant', 'owner', 'realtor')) NOT NULL
+    type VARCHAR(20) CHECK (type IN ('tenant', 'owner', 'realtor')) NOT NULL,
+    fee DECIMAL(10,2)
 );
 
 CREATE TABLE listings (
@@ -26,7 +27,6 @@ CREATE TABLE listings (
     -- property details
     price INT,
     price_negotiable BOOLEAN DEFAULT FALSE,
-    currency VARCHAR(3) DEFAULT 'USD',  -- some list in UZS
     rooms INT,
     floor INT,
     total_floors INT,

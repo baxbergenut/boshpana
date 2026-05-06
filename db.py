@@ -12,7 +12,7 @@ async def create_pool():
 
 async def get_user(pool, user_id):
     query = (
-        "SELECT id, username, phone, full_name, join_date, is_banned, type "
+        "SELECT id, username, phone, full_name, join_date, is_banned, type, fee "
         "FROM users WHERE id = $1"
     )
     return await pool.fetchrow(query, user_id)
@@ -35,6 +35,10 @@ async def update_user_phone(pool, user_id, phone):
     query = "UPDATE users SET phone = $1 WHERE id = $2"
     await pool.execute(query, phone, user_id)
 
+async def update_user_fee(pool, user_id, fee):
+    query = "UPDATE users SET fee = $1 WHERE id = $2"
+    await pool.execute(query, fee, user_id)
+
 async def create_listing(pool, owner_id, listing):
     tenant_prefs = set(listing.get("tenant_prefs", []))
     amenities = set(listing.get("amenities", []))
@@ -42,13 +46,13 @@ async def create_listing(pool, owner_id, listing):
     query = (
         "INSERT INTO listings ("
         "owner_id, lon, lat, address, district, price, price_negotiable, "
-        "currency, rooms, floor, total_floors, area_sqm, for_boys, for_girls, "
+        "rooms, floor, total_floors, area_sqm, for_boys, for_girls, "
         "for_families, max_tenants, needed_tenants, utils_included, has_wifi, "
         "has_washing_machine, has_fridge, has_ac, has_heating, has_parking, "
         "has_elevator, has_furniture, description"
         ") VALUES ("
-        "$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, "
-        "$16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27"
+        "$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, "
+        "$15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26"
         ") RETURNING id"
     )
 
@@ -61,7 +65,6 @@ async def create_listing(pool, owner_id, listing):
         listing.get("district"),
         listing.get("price"),
         listing.get("price_negotiable"),
-        listing.get("currency", "USD"),
         listing.get("rooms"),
         listing.get("floor"),
         listing.get("total_floors"),
@@ -94,7 +97,26 @@ async def insert_listing_photos(pool, listing_id, photos):
 
 async def get_user_listings(pool, owner_id):
     query = (
-        "SELECT id, status, price, currency, rooms, district, created_at "
+        "SELECT id, status, price, price_negotiable, rooms, floor, total_floors, "
+        "area_sqm, district, address, lon, lat, for_boys, for_girls, for_families, "
+        "max_tenants, needed_tenants, utils_included, has_wifi, has_washing_machine, "
+        "has_fridge, has_ac, has_heating, has_parking, has_elevator, has_furniture, "
+        "description, created_at "
         "FROM listings WHERE owner_id = $1 ORDER BY created_at DESC"
     )
     return await pool.fetch(query, owner_id)
+
+async def get_listing_photos(pool, listing_id):
+    query = (
+        "SELECT telegram_file_id FROM listing_photos "
+        "WHERE listing_id = $1 ORDER BY order_index ASC"
+    )
+    return await pool.fetch(query, listing_id)
+
+async def get_map_listings(pool):
+    query = (
+        "SELECT id, lat, lon, price, address, district "
+        "FROM listings "
+        "WHERE status = 'available' AND lat IS NOT NULL AND lon IS NOT NULL"
+    )
+    return await pool.fetch(query)
