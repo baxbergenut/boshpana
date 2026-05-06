@@ -72,10 +72,12 @@
   position: absolute;
   left: 50%;
   top: 100%;
-  width: 2px;
-  height: 16px;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 16px solid #4042af;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
   transform: translateX(-50%);
 }
 
