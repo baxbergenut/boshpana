@@ -84,17 +84,17 @@ export default function Home() {
             typeof item.price === "number"
               ? `${item.price.toLocaleString("en-US")} $`
               : "Narx kelishiladi";
-          const address = item.address || item.district || "Manzil berilmagan";
 
-          const marker = L.marker([item.lat, item.lon]).addTo(markersLayer);
-          marker
-            .bindTooltip(`<strong>${priceLabel}</strong><br/>${address}`, {
-              permanent: true,
-              direction: "top",
-              offset: [0, -16],
-              className: styles.priceTooltip,
-            })
-            .openTooltip();
+          const priceIcon = L.divIcon({
+            className: styles.pricePin,
+            html: `<div class="${styles.pricePinLabel}">${priceLabel}</div>`,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          });
+
+          L.marker([item.lat, item.lon], { icon: priceIcon }).addTo(
+            markersLayer,
+          );
           bounds.push([item.lat, item.lon]);
         });
 

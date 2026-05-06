@@ -45,7 +45,13 @@
   animation: fadeUp 0.6s ease-out;
 }
 
-.priceTooltip {
+.pricePin {
+  background: transparent;
+  border: none;
+}
+
+.pricePinLabel {
+  position: relative;
   background: #ffffff;
   color: var(--ink);
   font-weight: 600;
@@ -55,23 +61,20 @@
   line-height: 1.2;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  transform: translate(-50%, -120%);
 }
 
-.priceTooltip :global(strong) {
-  font-weight: 700;
-}
-
-.priceTooltip :global(br) {
-  display: block;
+.pricePinLabel::after {
   content: "";
-  margin-top: 2px;
-}
-
-:global(.leaflet-tooltip.priceTooltip) {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transform: translateX(-50%);
 }
 
 @keyframes fadeUp {
