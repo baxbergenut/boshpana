@@ -27,6 +27,8 @@ CREATE TABLE listings (
     -- property details
     price INT,
     currency VARCHAR(10) DEFAULT 'USD',
+    price_per_person BOOLEAN DEFAULT FALSE,
+    total_price INT,
     price_negotiable BOOLEAN DEFAULT FALSE,
     rooms INT,
     floor INT,

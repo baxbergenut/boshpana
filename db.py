@@ -45,16 +45,24 @@ async def create_listing(pool, owner_id, listing):
 
     query = (
         "INSERT INTO listings ("
-        "owner_id, lon, lat, address, district, price, currency, price_negotiable, "
+        "owner_id, lon, lat, address, district, price, currency, price_per_person, total_price, price_negotiable, "
         "rooms, floor, total_floors, area_sqm, for_boys, for_girls, "
         "for_families, shared, max_tenants, needed_tenants, utils_included, has_wifi, "
         "has_washing_machine, has_fridge, has_ac, has_heating, has_parking, "
         "has_elevator, has_furniture, description"
         ") VALUES ("
         "$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, "
-        "$15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28"
+        "$15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30"
         ") RETURNING id"
     )
+
+    price = listing.get("price")
+    price_per_person = bool(listing.get("price_per_person"))
+    max_tenants = listing.get("max_tenants") or 0
+    if price_per_person and max_tenants > 0:
+        total_price = price * max_tenants
+    else:
+        total_price = price
 
     return await pool.fetchrow(
         query,
@@ -63,8 +71,10 @@ async def create_listing(pool, owner_id, listing):
         listing.get("lat"),
         listing.get("address"),
         listing.get("district"),
-        listing.get("price"),
+        price,
         (listing.get("currency") or "USD"),
+        price_per_person,
+        total_price,
         listing.get("price_negotiable"),
         listing.get("rooms"),
         listing.get("floor"),
@@ -99,7 +109,7 @@ async def insert_listing_photos(pool, listing_id, photos):
 
 async def get_user_listings(pool, owner_id):
     query = (
-        "SELECT id, status, price, currency, price_negotiable, rooms, floor, total_floors, "
+        "SELECT id, status, price, currency, price_per_person, price_negotiable, rooms, floor, total_floors, "
         "area_sqm, district, address, lon, lat, for_boys, for_girls, for_families, "
         "max_tenants, needed_tenants, utils_included, has_wifi, has_washing_machine, "
         "has_fridge, has_ac, has_heating, has_parking, has_elevator, has_furniture, "
@@ -117,7 +127,7 @@ async def get_listing_photos(pool, listing_id):
 
 async def get_map_listings(pool):
     query = (
-        "SELECT id, lat, lon, price, address, district "
+        "SELECT id, lat, lon, COALESCE(total_price, price) AS price, address, district "
         "FROM listings "
         "WHERE status = 'available' AND lat IS NOT NULL AND lon IS NOT NULL"
     )

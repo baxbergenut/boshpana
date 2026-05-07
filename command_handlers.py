@@ -214,11 +214,13 @@ def build_listing_caption(row):
 
     needed_label = row["needed_tenants"] if row["needed_tenants"] else "Yo'q"
     currency = row.get("currency") or "USD"
+    price_unit = "Bir kishi uchun" if row.get("price_per_person") else "Umumiy"
 
     return (
         f"📋 E'lon ma'lumoti:\n"
         f"📌 Holat: {status_label}\n"
         f"💵 Narx: {row['price']} {currency}\n"
+        f"💵 Narx turi: {price_unit}\n"
         f"💬 Muzokaraga ochiq: {('Ha' if row['price_negotiable'] else 'Yo\'q')}\n"
         f"🚪 Xonalar: {row['rooms']}\n"
         f"🏢 Qavat: {row['floor']}/{row['total_floors']}\n"

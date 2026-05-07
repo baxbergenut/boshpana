@@ -7,7 +7,7 @@ from db import create_listing, insert_listing_photos, get_user
 
 # states
 # expanded to collect all fields from `listings` (except id, owner_id, status)
-PHOTOS, CURRENCY, PRICE, PRICE_NEGOTIABLE, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, SHARED, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(19)
+PHOTOS, SHARED, PRICE_UNIT, CURRENCY, PRICE, PRICE_NEGOTIABLE, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(20)
 
 async def start_listing(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -70,14 +70,8 @@ async def photos_done(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("⚠️ Kamida bitta rasm yuboring!")
         return PHOTOS
     
-    await query.edit_message_text(
-        "Narx valyutasini tanlang:",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("USD", callback_data="currency_USD"), InlineKeyboardButton("UZS", callback_data="currency_UZS")],
-            [InlineKeyboardButton("EUR", callback_data="currency_EUR")],
-        ])
-    )
-    return CURRENCY
+    await ask_shared(update, context)
+    return SHARED
 
 async def handle_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -90,6 +84,20 @@ async def handle_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return PRICE
 
+async def handle_price_unit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data["listing"]["price_per_person"] = query.data == "price_unit_person"
+    await query.edit_message_text(
+        "Narx valyutasini tanlang:",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("USD", callback_data="currency_USD"), InlineKeyboardButton("UZS", callback_data="currency_UZS")],
+            [InlineKeyboardButton("EUR", callback_data="currency_EUR")],
+        ])
+    )
+    return CURRENCY
+
 async def handle_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         price = int(update.message.text.strip())
@@ -100,7 +108,7 @@ async def handle_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["listing"]["price"] = price
     # Ask whether price is negotiable
     await update.message.reply_text(
-        "Narx muzokaraga ochiqmi? (Ha/Yo'q)",
+        "Narxni kelishsa bo'ladimi?",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Ha", callback_data="price_neg_yes"), InlineKeyboardButton("Yo'q", callback_data="price_neg_no")]
         ])
@@ -135,7 +143,7 @@ async def handle_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rooms = int(query.data.split("_")[1])
     context.user_data["listing"]["rooms"] = rooms
     
-    await query.edit_message_text("Nechinci qavat? Masalan: 3")
+    await query.edit_message_text("Kvartirangiz nechinchi qavatda? Masalan: 3")
     return FLOOR
 
 async def handle_floor(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -146,7 +154,7 @@ async def handle_floor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return FLOOR
     
     context.user_data["listing"]["floor"] = floor
-    await update.message.reply_text("Umumiy qavatlar soni? Masalan: 9")
+    await update.message.reply_text("Umumiy nechta qavat bor? Masalan: 9")
     return TOTAL_FLOORS
 
 async def handle_total_floors(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -289,7 +297,7 @@ async def ask_tenant_prefs(update, context):
         await update.message.reply_text(text, reply_markup=markup)
 
 async def ask_shared(update, context):
-    text = "E'loningiz umumiy (shared)mi?"
+    text = "Kvartirangiz sheriklikkami?"
     markup = InlineKeyboardMarkup([
         [InlineKeyboardButton("Ha", callback_data="shared_yes"), InlineKeyboardButton("Yo'q", callback_data="shared_no")]
     ])
@@ -329,8 +337,8 @@ async def handle_tenant_prefs(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
 
     if query.data == "tenant_prefs_done":
-        await ask_shared(update, context)
-        return SHARED
+        await query.edit_message_text("Maksimal ijarachi sonini kiriting (yoki 0 agar muhim bo'lmasa)")
+        return MAX_TENANTS
 
     key = query.data.replace("tenant_", "")
     prefs = context.user_data["listing"].setdefault("tenant_prefs", [])
@@ -350,11 +358,24 @@ async def handle_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["listing"]["shared"] = shared
     if not shared:
         context.user_data["listing"]["needed_tenants"] = 0
+        context.user_data["listing"]["price_per_person"] = False
+        await query.edit_message_text(
+            "Narx valyutasini tanlang:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("USD", callback_data="currency_USD"), InlineKeyboardButton("UZS", callback_data="currency_UZS")],
+                [InlineKeyboardButton("EUR", callback_data="currency_EUR")],
+            ])
+        )
+        return CURRENCY
 
     await query.edit_message_text(
-        "Maksimal ijarachi sonini kiriting (yoki 0 agar muhim bo'lmasa)"
+        "Narx bir kishi uchunmi yoki umumiy?",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Bir kishi uchun", callback_data="price_unit_person")],
+            [InlineKeyboardButton("Umumiy", callback_data="price_unit_total")],
+        ])
     )
-    return MAX_TENANTS
+    return PRICE_UNIT
 
 
 async def handle_max_tenants(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -424,6 +445,7 @@ async def show_confirmation(update, context):
     tenant_labels = [label for key, label in TENANT_PREFS_LIST if key in tenant_prefs]
 
     shared_label = "Ha" if l.get("shared") else "Yo'q"
+    price_unit_label = "Bir kishi uchun" if l.get("price_per_person") else "Umumiy"
     needed_label = l.get("needed_tenants") if l.get("needed_tenants") else "Yo'q"
 
     text = (
@@ -437,6 +459,7 @@ async def show_confirmation(update, context):
         f"🏠 Manzil: {l.get('address') or 'Yo\'q'}\n"
         f"📍 Lokatsiya: {l.get('lat') if l.get('lat') else '❌'}\n"
         f"🤝 Umumiy (shared): {shared_label}\n"
+        f"💵 Narx turi: {price_unit_label}\n"
         f"👥 Kimlarga mos: {', '.join(tenant_labels) or 'Yo\'q'}\n"
         f"👤 Maks. ijarachi: {l.get('max_tenants') or 'Noma\'lum'}\n"
         f"🔎 Kerakli ijarachi: {needed_label}\n"
@@ -489,6 +512,8 @@ def listing_conversation_handler():
                 MessageHandler(filters.PHOTO, handle_photos),
                 CallbackQueryHandler(photos_done, pattern="^photos_done$")
             ],
+            SHARED: [CallbackQueryHandler(handle_shared, pattern="^shared_")],
+            PRICE_UNIT: [CallbackQueryHandler(handle_price_unit, pattern="^price_unit_")],
             CURRENCY: [CallbackQueryHandler(handle_currency, pattern="^currency_")],
             PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_price)],
             PRICE_NEGOTIABLE: [CallbackQueryHandler(handle_price_negotiable, pattern="^price_neg_")],
@@ -506,7 +531,6 @@ def listing_conversation_handler():
                 CallbackQueryHandler(skip_location, pattern="^skip_location$")
             ],
             TENANT_PREFS: [CallbackQueryHandler(handle_tenant_prefs, pattern="^tenant_|^tenant_prefs_done$")],
-            SHARED: [CallbackQueryHandler(handle_shared, pattern="^shared_")],
             MAX_TENANTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_max_tenants)],
             NEEDED_TENANTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_needed_tenants)],
             UTILS_INCLUDED: [CallbackQueryHandler(handle_utils_included, pattern="^utils_")],
