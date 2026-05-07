@@ -45,6 +45,84 @@ const buildLegendItems = (geojson) => {
   return items;
 };
 
+const buildFallbackLines = (geojson) => {
+  const hasLinework = geojson?.features?.some((feature) => {
+    const type = feature?.geometry?.type;
+    return type && type !== "Point" && type !== "MultiPoint";
+  });
+
+  if (hasLinework) {
+    return [];
+  }
+
+  const groups = new Map();
+  geojson?.features?.forEach((feature) => {
+    const type = feature?.geometry?.type;
+    if (type !== "Point") {
+      return;
+    }
+
+    const rawColor = feature?.properties?.colour ?? "unknown";
+    const coords = feature?.geometry?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) {
+      return;
+    }
+
+    const entry = {
+      latlng: [coords[1], coords[0]],
+      color: getMetroColor(rawColor),
+      rawColor,
+    };
+
+    if (!groups.has(rawColor)) {
+      groups.set(rawColor, []);
+    }
+    groups.get(rawColor).push(entry);
+  });
+
+  const lines = [];
+
+  groups.forEach((stations, rawColor) => {
+    if (stations.length < 2) {
+      return;
+    }
+
+    const remaining = [...stations];
+    remaining.sort((a, b) => {
+      if (a.latlng[1] !== b.latlng[1]) {
+        return a.latlng[1] - b.latlng[1];
+      }
+      return a.latlng[0] - b.latlng[0];
+    });
+
+    const ordered = [remaining.shift()];
+    while (remaining.length > 0) {
+      const current = ordered[ordered.length - 1];
+      let nearestIndex = 0;
+      let nearestDistance = Infinity;
+
+      remaining.forEach((candidate, index) => {
+        const dx = candidate.latlng[0] - current.latlng[0];
+        const dy = candidate.latlng[1] - current.latlng[1];
+        const distance = dx * dx + dy * dy;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = index;
+        }
+      });
+
+      ordered.push(remaining.splice(nearestIndex, 1)[0]);
+    }
+
+    lines.push({
+      color: getMetroColor(rawColor),
+      coords: ordered.map((station) => station.latlng),
+    });
+  });
+
+  return lines;
+};
+
 export default function Home() {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
@@ -148,6 +226,15 @@ export default function Home() {
               });
             },
           }).addTo(mapInstance);
+
+          buildFallbackLines(geojson).forEach((line) => {
+            L.polyline(line.coords, {
+              color: line.color,
+              weight: 4,
+              opacity: 0.85,
+              pane: "metro",
+            }).addTo(mapInstance);
+          });
         }
       } catch (error) {
         // Skip metro overlay if the GeoJSON fails to load.
