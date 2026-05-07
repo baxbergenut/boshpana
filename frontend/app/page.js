@@ -13,23 +13,12 @@ export default function Home() {
 
   useEffect(() => {
     const webApp = window?.Telegram?.WebApp;
-    const mapContainer = mapElRef.current;
-    const handleTouchMove = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    };
 
     if (webApp?.disableVerticalSwipes) {
       webApp.disableVerticalSwipes();
     }
     webApp?.ready?.();
     webApp?.expand?.();
-
-    if (mapContainer) {
-      mapContainer.addEventListener("touchmove", handleTouchMove, {
-        passive: false,
-      });
-    }
 
     let isMounted = true;
 
@@ -132,9 +121,6 @@ export default function Home() {
 
     return () => {
       isMounted = false;
-      if (mapContainer) {
-        mapContainer.removeEventListener("touchmove", handleTouchMove);
-      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
