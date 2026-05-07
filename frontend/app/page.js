@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
-import metroGeojson from "./data/tashkent-metro.geojson";
 
 const DEFAULT_CENTER = [41.3111, 69.2797];
 const DEFAULT_ZOOM = 11;
@@ -50,7 +49,11 @@ export default function Home() {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const [count, setCount] = useState(0);
-  const metroLegendItems = useMemo(() => buildLegendItems(metroGeojson), []);
+  const [metroData, setMetroData] = useState(null);
+  const metroLegendItems = useMemo(
+    () => buildLegendItems(metroData),
+    [metroData],
+  );
 
   useEffect(() => {
     const webApp = window?.Telegram?.WebApp;
@@ -107,36 +110,48 @@ export default function Home() {
       const metroPane = mapInstance.createPane("metro");
       metroPane.style.zIndex = 450;
 
-      L.geoJSON(metroGeojson, {
-        pane: "metro",
-        style: (feature) => ({
-          color: getMetroColor(feature?.properties?.colour),
-          weight: 4,
-          opacity: 0.9,
-        }),
-        pointToLayer: (feature, latlng) =>
-          L.circleMarker(latlng, {
-            radius: 4,
-            weight: 1,
-            color: "#ffffff",
-            fillColor: getMetroColor(feature?.properties?.colour),
-            fillOpacity: 1,
-            pane: "metro",
-          }),
-        onEachFeature: (feature, layer) => {
-          const name = feature?.properties?.name;
-          if (!name) {
-            return;
+      try {
+        const metroResponse = await fetch("/tashkent-metro.geojson");
+        if (metroResponse.ok) {
+          const geojson = await metroResponse.json();
+          if (isMounted) {
+            setMetroData(geojson);
           }
 
-          layer.bindTooltip(name, {
-            className: styles.metroTooltip,
-            direction: "top",
-            offset: [0, -6],
-            opacity: 0.9,
-          });
-        },
-      }).addTo(mapInstance);
+          L.geoJSON(geojson, {
+            pane: "metro",
+            style: (feature) => ({
+              color: getMetroColor(feature?.properties?.colour),
+              weight: 4,
+              opacity: 0.9,
+            }),
+            pointToLayer: (feature, latlng) =>
+              L.circleMarker(latlng, {
+                radius: 4,
+                weight: 1,
+                color: "#ffffff",
+                fillColor: getMetroColor(feature?.properties?.colour),
+                fillOpacity: 1,
+                pane: "metro",
+              }),
+            onEachFeature: (feature, layer) => {
+              const name = feature?.properties?.name;
+              if (!name) {
+                return;
+              }
+
+              layer.bindTooltip(name, {
+                className: styles.metroTooltip,
+                direction: "top",
+                offset: [0, -6],
+                opacity: 0.9,
+              });
+            },
+          }).addTo(mapInstance);
+        }
+      } catch (error) {
+        // Skip metro overlay if the GeoJSON fails to load.
+      }
 
       const markersLayer = L.layerGroup().addTo(mapInstance);
       mapRef.current = mapInstance;
