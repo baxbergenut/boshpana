@@ -7,7 +7,7 @@ from db import create_listing, insert_listing_photos, get_user
 
 # states
 # expanded to collect all fields from `listings` (except id, owner_id, status)
-PHOTOS, PRICE, PRICE_NEGOTIABLE, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(17)
+PHOTOS, CURRENCY, PRICE, PRICE_NEGOTIABLE, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, SHARED, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(19)
 
 async def start_listing(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -70,7 +70,24 @@ async def photos_done(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("⚠️ Kamida bitta rasm yuboring!")
         return PHOTOS
     
-    await query.edit_message_text("Oylik narxni kiriting (USD) 💵\nMasalan: 400")
+    await query.edit_message_text(
+        "Narx valyutasini tanlang:",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("USD", callback_data="currency_USD"), InlineKeyboardButton("UZS", callback_data="currency_UZS")],
+            [InlineKeyboardButton("EUR", callback_data="currency_EUR")],
+        ])
+    )
+    return CURRENCY
+
+async def handle_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    currency = query.data.replace("currency_", "")
+    context.user_data["listing"]["currency"] = currency
+    await query.edit_message_text(
+        f"Oylik narxni kiriting ({currency}) 💵\nMasalan: 400"
+    )
     return PRICE
 
 async def handle_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -271,6 +288,17 @@ async def ask_tenant_prefs(update, context):
     else:
         await update.message.reply_text(text, reply_markup=markup)
 
+async def ask_shared(update, context):
+    text = "E'loningiz umumiy (shared)mi?"
+    markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Ha", callback_data="shared_yes"), InlineKeyboardButton("Yo'q", callback_data="shared_no")]
+    ])
+
+    if hasattr(update, 'callback_query') and update.callback_query:
+        await update.callback_query.edit_message_text(text, reply_markup=markup)
+    else:
+        await update.message.reply_text(text, reply_markup=markup)
+
 async def handle_amenities(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -301,8 +329,8 @@ async def handle_tenant_prefs(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
 
     if query.data == "tenant_prefs_done":
-        await query.edit_message_text("Maksimal ijarachi sonini kiriting (yoki 0 agar muhim bo'lmasa)")
-        return MAX_TENANTS
+        await ask_shared(update, context)
+        return SHARED
 
     key = query.data.replace("tenant_", "")
     prefs = context.user_data["listing"].setdefault("tenant_prefs", [])
@@ -314,6 +342,20 @@ async def handle_tenant_prefs(update: Update, context: ContextTypes.DEFAULT_TYPE
     await ask_tenant_prefs(update, context)
     return TENANT_PREFS
 
+async def handle_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    shared = query.data == "shared_yes"
+    context.user_data["listing"]["shared"] = shared
+    if not shared:
+        context.user_data["listing"]["needed_tenants"] = 0
+
+    await query.edit_message_text(
+        "Maksimal ijarachi sonini kiriting (yoki 0 agar muhim bo'lmasa)"
+    )
+    return MAX_TENANTS
+
 
 async def handle_max_tenants(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -322,8 +364,18 @@ async def handle_max_tenants(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("⚠️ Faqat raqam kiriting.")
         return MAX_TENANTS
     context.user_data["listing"]["max_tenants"] = v if v > 0 else None
-    await update.message.reply_text("Kerakli ijarachi (needed tenants) sonini kiriting (yoki 0)")
-    return NEEDED_TENANTS
+    if context.user_data["listing"].get("shared"):
+        await update.message.reply_text("Kerakli ijarachi (needed tenants) sonini kiriting (yoki 0)")
+        return NEEDED_TENANTS
+
+    context.user_data["listing"]["needed_tenants"] = 0
+    await update.message.reply_text(
+        "Kommunal to'lovlar narxga kiritilganmi?",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Ha", callback_data="utils_yes"), InlineKeyboardButton("Yo'q", callback_data="utils_no")]
+        ])
+    )
+    return UTILS_INCLUDED
 
 
 async def handle_needed_tenants(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -332,7 +384,7 @@ async def handle_needed_tenants(update: Update, context: ContextTypes.DEFAULT_TY
     except ValueError:
         await update.message.reply_text("⚠️ Faqat raqam kiriting.")
         return NEEDED_TENANTS
-    context.user_data["listing"]["needed_tenants"] = v if v > 0 else None
+    context.user_data["listing"]["needed_tenants"] = v if v > 0 else 0
     # ask if utilities included
     await update.message.reply_text(
         "Kommunal to'lovlar narxga kiritilganmi?",
@@ -371,9 +423,12 @@ async def show_confirmation(update, context):
     tenant_prefs = l.get('tenant_prefs', [])
     tenant_labels = [label for key, label in TENANT_PREFS_LIST if key in tenant_prefs]
 
+    shared_label = "Ha" if l.get("shared") else "Yo'q"
+    needed_label = l.get("needed_tenants") if l.get("needed_tenants") else "Yo'q"
+
     text = (
         f"📋 E'loningizni tekshiring:\n\n"
-        f"💵 Narx: {l.get('price')} USD\n"
+        f"💵 Narx: {l.get('price')} {l.get('currency') or 'USD'}\n"
         f"💬 Muzokaraga ochiq: {('Ha' if l.get('price_negotiable') else 'Yo\'q')}\n"
         f"🚪 Xonalar: {l.get('rooms')}\n"
         f"🏢 Qavat: {l.get('floor')}/{l.get('total_floors')}\n"
@@ -381,9 +436,10 @@ async def show_confirmation(update, context):
         f"🗺️ Tuman: {l.get('district')}\n"
         f"🏠 Manzil: {l.get('address') or 'Yo\'q'}\n"
         f"📍 Lokatsiya: {l.get('lat') if l.get('lat') else '❌'}\n"
+        f"🤝 Umumiy (shared): {shared_label}\n"
         f"👥 Kimlarga mos: {', '.join(tenant_labels) or 'Yo\'q'}\n"
         f"👤 Maks. ijarachi: {l.get('max_tenants') or 'Noma\'lum'}\n"
-        f"🔎 Kerakli ijarachi: {l.get('needed_tenants') or 'Noma\'lum'}\n"
+        f"🔎 Kerakli ijarachi: {needed_label}\n"
         f"⚙️ Kommunal kiritilgan: {('Ha' if l.get('utils_included') else 'Yo\'q')}\n"
         f"🏠 Qulayliklar: {', '.join(amenity_labels) or 'Yo\'q'}\n"
         f"📸 Rasmlar: {len(l.get('photos', []))} ta\n"
@@ -433,6 +489,7 @@ def listing_conversation_handler():
                 MessageHandler(filters.PHOTO, handle_photos),
                 CallbackQueryHandler(photos_done, pattern="^photos_done$")
             ],
+            CURRENCY: [CallbackQueryHandler(handle_currency, pattern="^currency_")],
             PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_price)],
             PRICE_NEGOTIABLE: [CallbackQueryHandler(handle_price_negotiable, pattern="^price_neg_")],
             ROOMS: [CallbackQueryHandler(handle_rooms, pattern="^rooms_")],
@@ -449,6 +506,7 @@ def listing_conversation_handler():
                 CallbackQueryHandler(skip_location, pattern="^skip_location$")
             ],
             TENANT_PREFS: [CallbackQueryHandler(handle_tenant_prefs, pattern="^tenant_|^tenant_prefs_done$")],
+            SHARED: [CallbackQueryHandler(handle_shared, pattern="^shared_")],
             MAX_TENANTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_max_tenants)],
             NEEDED_TENANTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_needed_tenants)],
             UTILS_INCLUDED: [CallbackQueryHandler(handle_utils_included, pattern="^utils_")],

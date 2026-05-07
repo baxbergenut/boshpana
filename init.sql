@@ -26,6 +26,7 @@ CREATE TABLE listings (
     
     -- property details
     price INT,
+    currency VARCHAR(10) DEFAULT 'USD',
     price_negotiable BOOLEAN DEFAULT FALSE,
     rooms INT,
     floor INT,
@@ -36,6 +37,7 @@ CREATE TABLE listings (
     for_boys BOOLEAN DEFAULT FALSE,
     for_girls BOOLEAN DEFAULT FALSE,
     for_families BOOLEAN DEFAULT FALSE,
+    shared BOOLEAN DEFAULT FALSE,
     max_tenants INT,
     needed_tenants INT,
     

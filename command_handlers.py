@@ -212,10 +212,13 @@ def build_listing_caption(row):
     address = row["address"] or "Yo'q"
     location = "Bor" if row["lat"] and row["lon"] else "Yo'q"
 
+    needed_label = row["needed_tenants"] if row["needed_tenants"] else "Yo'q"
+    currency = row.get("currency") or "USD"
+
     return (
         f"📋 E'lon ma'lumoti:\n"
         f"📌 Holat: {status_label}\n"
-        f"💵 Narx: {row['price']} USD\n"
+        f"💵 Narx: {row['price']} {currency}\n"
         f"💬 Muzokaraga ochiq: {('Ha' if row['price_negotiable'] else 'Yo\'q')}\n"
         f"🚪 Xonalar: {row['rooms']}\n"
         f"🏢 Qavat: {row['floor']}/{row['total_floors']}\n"
@@ -225,7 +228,7 @@ def build_listing_caption(row):
         f"📍 Lokatsiya: {location}\n"
         f"👥 Kimlarga mos: {', '.join(tenant_labels) or 'Yo\'q'}\n"
         f"👤 Maks. ijarachi: {row['max_tenants'] or 'Noma\'lum'}\n"
-        f"🔎 Kerakli ijarachi: {row['needed_tenants'] or 'Noma\'lum'}\n"
+        f"🔎 Kerakli ijarachi: {needed_label}\n"
         f"⚙️ Kommunal kiritilgan: {('Ha' if row['utils_included'] else 'Yo\'q')}\n"
         f"🏠 Qulayliklar: {', '.join(amenity_labels) or 'Yo\'q'}\n"
         f"📝 Tavsif: {row['description'] or 'Yo\'q'}"

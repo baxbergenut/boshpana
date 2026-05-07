@@ -45,14 +45,14 @@ async def create_listing(pool, owner_id, listing):
 
     query = (
         "INSERT INTO listings ("
-        "owner_id, lon, lat, address, district, price, price_negotiable, "
+        "owner_id, lon, lat, address, district, price, currency, price_negotiable, "
         "rooms, floor, total_floors, area_sqm, for_boys, for_girls, "
-        "for_families, max_tenants, needed_tenants, utils_included, has_wifi, "
+        "for_families, shared, max_tenants, needed_tenants, utils_included, has_wifi, "
         "has_washing_machine, has_fridge, has_ac, has_heating, has_parking, "
         "has_elevator, has_furniture, description"
         ") VALUES ("
         "$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, "
-        "$15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26"
+        "$15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28"
         ") RETURNING id"
     )
 
@@ -64,6 +64,7 @@ async def create_listing(pool, owner_id, listing):
         listing.get("address"),
         listing.get("district"),
         listing.get("price"),
+        (listing.get("currency") or "USD"),
         listing.get("price_negotiable"),
         listing.get("rooms"),
         listing.get("floor"),
@@ -72,8 +73,9 @@ async def create_listing(pool, owner_id, listing):
         "for_boys" in tenant_prefs,
         "for_girls" in tenant_prefs,
         "for_families" in tenant_prefs,
+        bool(listing.get("shared")),
         listing.get("max_tenants"),
-        listing.get("needed_tenants"),
+        listing.get("needed_tenants") or 0,
         listing.get("utils_included"),
         "has_wifi" in amenities,
         "has_washing_machine" in amenities,
@@ -97,7 +99,7 @@ async def insert_listing_photos(pool, listing_id, photos):
 
 async def get_user_listings(pool, owner_id):
     query = (
-        "SELECT id, status, price, price_negotiable, rooms, floor, total_floors, "
+        "SELECT id, status, price, currency, price_negotiable, rooms, floor, total_floors, "
         "area_sqm, district, address, lon, lat, for_boys, for_girls, for_families, "
         "max_tenants, needed_tenants, utils_included, has_wifi, has_washing_machine, "
         "has_fridge, has_ac, has_heating, has_parking, has_elevator, has_furniture, "
