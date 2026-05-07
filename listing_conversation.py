@@ -2,7 +2,7 @@ from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, Ca
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, Update
 
 CREATE_LISTING_TEXT = "Yangi e'lon berish 🏠"
-from db import create_listing, insert_listing_photos
+from db import create_listing, insert_listing_photos, get_user
 
 
 # states
@@ -10,11 +10,18 @@ from db import create_listing, insert_listing_photos
 PHOTOS, PRICE, PRICE_NEGOTIABLE, ROOMS, FLOOR, TOTAL_FLOORS, AREA, DISTRICT, ADDRESS, LOCATION, TENANT_PREFS, MAX_TENANTS, NEEDED_TENANTS, UTILS_INCLUDED, AMENITIES, DESCRIPTION, CONFIRM = range(17)
 
 async def start_listing(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["listing"] = {}
-    
     query = update.callback_query
     await query.answer()
-    
+    pool = context.bot_data.get("pool")
+    user = await get_user(pool, query.from_user.id)
+    if user and user.get("type") == "tenant":
+        await query.edit_message_text(
+            "Ijarachilar uchun e'lon berish mavjud emas."
+        )
+        return ConversationHandler.END
+
+    context.user_data["listing"] = {}
+
     await query.edit_message_text(
         "Yangi e'lon yaratamiz! 🏠\n\nAvval rasmlarni yuboring (maksimum 10).\nTugagach '✅ Tayyor' tugmasini bosing.",
         reply_markup=InlineKeyboardMarkup([
@@ -24,6 +31,14 @@ async def start_listing(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return PHOTOS
 
 async def start_listing_from_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pool = context.bot_data.get("pool")
+    user = await get_user(pool, update.effective_user.id)
+    if user and user.get("type") == "tenant":
+        await update.message.reply_text(
+            "Ijarachilar uchun e'lon berish mavjud emas."
+        )
+        return ConversationHandler.END
+
     context.user_data["listing"] = {}
     await update.message.reply_text(
         "Yangi e'lon yaratamiz! 🏠\n\nAvval rasmlarni yuboring (maksimum 10).\nTugagach '✅ Tayyor' tugmasini bosing.",

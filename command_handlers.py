@@ -34,9 +34,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         user_type = user["type"]
-        buttons = [[KeyboardButton(CREATE_LISTING_TEXT)], [KeyboardButton(MY_LISTINGS_TEXT)]]
         if user_type == "tenant":
-            buttons.insert(0, [KeyboardButton(MAP_LISTINGS_TEXT)])
+            buttons = [[KeyboardButton(MAP_LISTINGS_TEXT)]]
+        else:
+            buttons = [[KeyboardButton(CREATE_LISTING_TEXT)], [KeyboardButton(MY_LISTINGS_TEXT)]]
         await update.message.reply_text(
             "Qaytib keldingiz! 👋\n\nNima qilmoqchisiz?",
             reply_markup=ReplyKeyboardMarkup(
@@ -65,7 +66,14 @@ async def process_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await handle_set_type(query, context, "owner")
             await handle_request_number(query, context)
         case "create_listing":
-            print('Creating a new listing!')
+            pool = context.bot_data.get("pool")
+            user = await get_user(pool, query.from_user.id)
+            if user and user.get("type") == "tenant":
+                await query.message.reply_text(
+                    "Ijarachilar uchun e'lon berish mavjud emas."
+                )
+                return
+            print("Creating a new listing!")
             listing_conversation_handler()
         case "my_listings":
             await handle_my_listings(update, context)
@@ -252,7 +260,26 @@ async def send_user_listings(update: Update, context: ContextTypes.DEFAULT_TYPE,
             await context.bot.send_message(chat_id=chat_id, text=caption)
 
 async def handle_my_listings(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pool = context.bot_data.get("pool")
+    user = await get_user(pool, update.effective_user.id)
+    if user and user.get("type") == "tenant":
+        if update.callback_query:
+            await update.callback_query.message.reply_text(
+                "Ijarachilar uchun e'lonlar bo'limi mavjud emas."
+            )
+        else:
+            await update.message.reply_text(
+                "Ijarachilar uchun e'lonlar bo'limi mavjud emas."
+            )
+        return
     await send_user_listings(update, context, update.effective_user.id)
 
 async def handle_my_listings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pool = context.bot_data.get("pool")
+    user = await get_user(pool, update.effective_user.id)
+    if user and user.get("type") == "tenant":
+        await update.message.reply_text(
+            "Ijarachilar uchun e'lonlar bo'limi mavjud emas."
+        )
+        return
     await send_user_listings(update, context, update.effective_user.id)
