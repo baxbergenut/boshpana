@@ -135,25 +135,9 @@ export default function Home() {
 
   useEffect(() => {
     const webApp = window?.Telegram?.WebApp;
-    const mapContainer = mapElRef.current;
-    const stopTouchBubble = (event) => {
-      event.stopPropagation();
-    };
 
-    if (webApp?.disableVerticalSwipes) {
-      webApp.disableVerticalSwipes();
-    }
     webApp?.ready?.();
     webApp?.expand?.();
-
-    if (mapContainer) {
-      mapContainer.addEventListener("touchstart", stopTouchBubble, {
-        passive: true,
-      });
-      mapContainer.addEventListener("touchmove", stopTouchBubble, {
-        passive: true,
-      });
-    }
 
     let isMounted = true;
 
@@ -311,10 +295,6 @@ export default function Home() {
 
     return () => {
       isMounted = false;
-      if (mapContainer) {
-        mapContainer.removeEventListener("touchstart", stopTouchBubble);
-        mapContainer.removeEventListener("touchmove", stopTouchBubble);
-      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
