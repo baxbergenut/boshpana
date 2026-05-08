@@ -195,18 +195,20 @@
 .photoStrip {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(180px, 1fr);
+  grid-auto-columns: minmax(220px, 70vw);
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 6px;
   scroll-snap-type: x mandatory;
+  align-items: stretch;
 }
 
 .photoFrame {
   border-radius: 14px;
   overflow: hidden;
   background: #f0eee8;
-  aspect-ratio: 4 / 3;
+  height: 180px;
+  min-height: 180px;
   scroll-snap-align: center;
   display: flex;
   align-items: center;
@@ -309,5 +311,14 @@
 
   .detailGrid {
     grid-template-columns: 1fr;
+  }
+
+  .photoStrip {
+    grid-auto-columns: 80vw;
+  }
+
+  .photoFrame {
+    height: 160px;
+    min-height: 160px;
   }
 }
