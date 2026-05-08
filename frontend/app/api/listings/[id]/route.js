@@ -21,6 +21,8 @@ const listings = {
     tenant_prefs: ["for_families"],
     amenities: ["has_wifi", "has_washing_machine", "has_furniture"],
     description: "Yorug' va toza xonadon. Metroga yaqin.",
+    owner_username: "example_user",
+    owner_phone: "+998901234567",
     photos: [
       {
         id: "demo-1-1",
@@ -54,6 +56,8 @@ const listings = {
     tenant_prefs: ["for_boys", "for_girls"],
     amenities: ["has_wifi", "has_ac", "has_parking"],
     description: "Keng va qulay. Yaqin atrofda do'konlar bor.",
+    owner_username: "another_user",
+    owner_phone: "+998909876543",
     photos: [
       {
         id: "demo-2-1",
@@ -83,6 +87,8 @@ const listings = {
     tenant_prefs: ["for_boys"],
     amenities: ["has_washing_machine", "has_heating"],
     description: "Sheriklik uchun mos, sokin hudud.",
+    owner_username: "realtor_pro",
+    owner_phone: "+998902468135",
     photos: [],
   },
 };

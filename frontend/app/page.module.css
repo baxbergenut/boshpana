@@ -153,6 +153,48 @@
   gap: 12px;
   padding: 16px 18px 10px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  align-items: flex-start;
+}
+
+.detailHeaderInfo {
+  flex: 1;
+}
+
+.detailHeaderActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.detailActionButtons {
+  display: flex;
+  gap: 6px;
+}
+
+.detailActionButton {
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: center;
+  display: inline-block;
+  transition: opacity 0.2s ease;
+}
+
+.detailActionButton:hover,
+.detailActionButton:active {
+  opacity: 0.85;
+}
+
+.detailActionButtonGhost {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink);
 }
 
 .detailTitle {
@@ -175,6 +217,7 @@
   font-size: 18px;
   color: var(--ink);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .detailBody {
