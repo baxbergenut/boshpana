@@ -193,25 +193,16 @@
 }
 
 .photoStrip {
-  display: flex;
+  display: grid;
   gap: 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 6px;
-  scroll-snap-type: x mandatory;
-  align-items: center;
-  height: 180px;
+  width: 100%;
 }
 
 .photoFrame {
   border-radius: 14px;
   overflow: hidden;
   background: #f0eee8;
-  height: 180px;
-  min-height: 180px;
-  width: min(70vw, 320px);
-  flex: 0 0 auto;
-  scroll-snap-align: center;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,8 +210,8 @@
 
 .photo {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -317,12 +308,10 @@
   }
 
   .photoStrip {
-    height: 160px;
+    width: 100%;
   }
 
   .photoFrame {
-    height: 160px;
-    min-height: 160px;
-    width: 80vw;
+    width: 100%;
   }
 }
