@@ -6,6 +6,9 @@ import styles from "./page.module.css";
 const DEFAULT_CENTER = [41.3111, 69.2797];
 const DEFAULT_ZOOM = 11;
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+
 const METRO_COLOR_MAP = {
   red: { label: "Red line", color: "#d64541" },
   blue: { label: "Blue line", color: "#2d72d9" },
@@ -123,15 +126,108 @@ const buildFallbackLines = (geojson) => {
   return lines;
 };
 
+const buildApiEndpoint = (path) => {
+  if (!API_BASE) {
+    return path;
+  }
+
+  return `${API_BASE.replace(/\/$/, "")}${path}`;
+};
+
+const buildApiHeaders = () => {
+  const headers = {
+    "ngrok-skip-browser-warning": "true",
+  };
+
+  if (API_KEY) {
+    headers["x-api-key"] = API_KEY;
+  }
+
+  return headers;
+};
+
+const AMENITY_LABELS = {
+  has_wifi: "WiFi",
+  has_washing_machine: "Kir yuvish mashina",
+  has_fridge: "Muzlatgich",
+  has_ac: "Konditsioner",
+  has_heating: "Isitish",
+  has_parking: "Parking",
+  has_elevator: "Lift",
+  has_furniture: "Mebel",
+};
+
+const TENANT_PREF_LABELS = {
+  for_boys: "Yigitlar",
+  for_girls: "Qizlar",
+  for_families: "Oila",
+};
+
+const formatPrice = (price, currency, perPerson) => {
+  if (!price || typeof price !== "number") {
+    return "Narx kelishiladi";
+  }
+
+  const formatted = `${price.toLocaleString("en-US")} ${currency || "USD"}`;
+  return perPerson ? `${formatted} (odam boshiga)` : formatted;
+};
+
+const formatValue = (value, fallback = "-") => {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  return String(value);
+};
+
 export default function Home() {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const [count, setCount] = useState(0);
   const [metroData, setMetroData] = useState(null);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
   const metroLegendItems = useMemo(
     () => buildLegendItems(metroData),
     [metroData],
   );
+
+  const isDetailsOpen = Boolean(
+    selectedListing || detailsLoading || detailsError,
+  );
+
+  const loadListingDetails = async (listingId) => {
+    if (!listingId) {
+      return;
+    }
+
+    setDetailsLoading(true);
+    setDetailsError("");
+    setSelectedListing(null);
+
+    try {
+      const response = await fetch(
+        buildApiEndpoint(`/api/listings/${listingId}`),
+        { headers: buildApiHeaders() },
+      );
+      if (!response.ok) {
+        throw new Error("Failed to load listing detail");
+      }
+
+      const payload = await response.json();
+      setSelectedListing(payload);
+    } catch (error) {
+      setDetailsError("Tafsilotlarni yuklab bo'lmadi. Qayta urinib ko'ring.");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedListing(null);
+    setDetailsError("");
+    setDetailsLoading(false);
+  };
 
   useEffect(() => {
     const webApp = window?.Telegram?.WebApp;
@@ -228,20 +324,9 @@ export default function Home() {
       mapRef.current = mapInstance;
 
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE;
-        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-        const endpoint = apiBase
-          ? `${apiBase.replace(/\/$/, "")}/api/listings`
-          : "/api/listings";
-
-        const headers = {
-          "ngrok-skip-browser-warning": "true",
-        };
-        if (apiKey) {
-          headers["x-api-key"] = apiKey;
-        }
-
-        const response = await fetch(endpoint, { headers });
+        const response = await fetch(buildApiEndpoint("/api/listings"), {
+          headers: buildApiHeaders(),
+        });
         if (!response.ok) {
           throw new Error("Failed to load listings");
         }
@@ -274,9 +359,9 @@ export default function Home() {
             iconAnchor: [0, 0],
           });
 
-          L.marker([item.lat, item.lon], { icon: priceIcon }).addTo(
-            markersLayer,
-          );
+          const marker = L.marker([item.lat, item.lon], { icon: priceIcon });
+          marker.on("click", () => loadListingDetails(item.id));
+          marker.addTo(markersLayer);
           bounds.push([item.lat, item.lon]);
         });
 
@@ -323,6 +408,163 @@ export default function Home() {
       <main className={styles.main}>
         <div ref={mapElRef} className={styles.map} />
       </main>
+      <section
+        className={`${styles.detailPanel} ${
+          isDetailsOpen ? styles.detailPanelActive : ""
+        }`}
+        aria-live="polite"
+      >
+        <div className={styles.detailHeader}>
+          <div>
+            <div className={styles.detailTitle}>
+              {selectedListing
+                ? formatPrice(
+                    selectedListing.price,
+                    selectedListing.currency,
+                    selectedListing.price_per_person,
+                  )
+                : detailsLoading
+                  ? "Yuklanmoqda..."
+                  : "Tafsilotlar"}
+            </div>
+            {selectedListing && (
+              <div className={styles.detailSubtitle}>
+                {formatValue(selectedListing.address)}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className={styles.detailClose}
+            onClick={handleCloseDetails}
+            aria-label="Close details"
+          >
+            x
+          </button>
+        </div>
+        <div className={styles.detailBody}>
+          {detailsError && (
+            <div className={styles.detailError}>{detailsError}</div>
+          )}
+          {detailsLoading && (
+            <div className={styles.detailLoading}>Yuklanmoqda...</div>
+          )}
+          {selectedListing && (
+            <>
+              <div className={styles.detailSectionTitle}>Rasmlar</div>
+              {selectedListing.photos?.length ? (
+                <div className={styles.photoStrip}>
+                  {selectedListing.photos.map((photo, index) => (
+                    <div key={photo.id || index} className={styles.photoFrame}>
+                      {photo.url ? (
+                        <img
+                          src={photo.url}
+                          alt="Listing"
+                          className={styles.photo}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className={styles.photoFallback}>Rasm</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.photoEmpty}>Rasm topilmadi.</div>
+              )}
+
+              <div className={styles.detailSectionTitle}>Asosiy ma'lumot</div>
+              <div className={styles.detailGrid}>
+                <div>
+                  <div className={styles.detailLabel}>Xonalar</div>
+                  <div className={styles.detailValue}>
+                    {formatValue(selectedListing.rooms)}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Qavat</div>
+                  <div className={styles.detailValue}>
+                    {formatValue(
+                      selectedListing.floor !== null &&
+                        selectedListing.total_floors !== null
+                        ? `${selectedListing.floor}/${selectedListing.total_floors}`
+                        : selectedListing.floor,
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Maydon</div>
+                  <div className={styles.detailValue}>
+                    {selectedListing.area_sqm
+                      ? `${selectedListing.area_sqm} kv.m`
+                      : "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Tuman</div>
+                  <div className={styles.detailValue}>
+                    {formatValue(selectedListing.district)}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Sheriklik</div>
+                  <div className={styles.detailValue}>
+                    {selectedListing.shared ? "Ha" : "Yo'q"}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Kelishuv</div>
+                  <div className={styles.detailValue}>
+                    {selectedListing.price_negotiable ? "Ha" : "Yo'q"}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Maks. ijarachi</div>
+                  <div className={styles.detailValue}>
+                    {formatValue(selectedListing.max_tenants)}
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.detailLabel}>Kerakli ijarachi</div>
+                  <div className={styles.detailValue}>
+                    {formatValue(selectedListing.needed_tenants)}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.detailSectionTitle}>Qulayliklar</div>
+              <div className={styles.detailValueBlock}>
+                {(selectedListing.amenities || []).length
+                  ? selectedListing.amenities
+                      .map((key) => AMENITY_LABELS[key] || key)
+                      .join(", ")
+                  : "Yo'q"}
+              </div>
+
+              <div className={styles.detailSectionTitle}>Kimlarga mos</div>
+              <div className={styles.detailValueBlock}>
+                {(selectedListing.tenant_prefs || []).length
+                  ? selectedListing.tenant_prefs
+                      .map((key) => TENANT_PREF_LABELS[key] || key)
+                      .join(", ")
+                  : "Cheklov yo'q"}
+              </div>
+
+              <div className={styles.detailSectionTitle}>Kommunal</div>
+              <div className={styles.detailValueBlock}>
+                {selectedListing.utils_included
+                  ? "Kommunal to'lovlar kiritilgan"
+                  : "Kommunal alohida"}
+              </div>
+
+              <div className={styles.detailSectionTitle}>Tavsif</div>
+              <div className={styles.detailValueBlock}>
+                {formatValue(selectedListing.description, "Yo'q")}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
