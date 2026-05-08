@@ -193,14 +193,14 @@
 }
 
 .photoStrip {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(220px, 70vw);
+  display: flex;
   gap: 12px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 6px;
   scroll-snap-type: x mandatory;
-  align-items: stretch;
+  align-items: center;
+  height: 180px;
 }
 
 .photoFrame {
@@ -209,6 +209,8 @@
   background: #f0eee8;
   height: 180px;
   min-height: 180px;
+  width: min(70vw, 320px);
+  flex: 0 0 auto;
   scroll-snap-align: center;
   display: flex;
   align-items: center;
@@ -219,6 +221,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .photoFallback {
@@ -314,11 +317,12 @@
   }
 
   .photoStrip {
-    grid-auto-columns: 80vw;
+    height: 160px;
   }
 
   .photoFrame {
     height: 160px;
     min-height: 160px;
+    width: 80vw;
   }
 }
