@@ -6,6 +6,7 @@ const listings = [
     price: 420,
     address: "Amir Temur Avenue",
     district: "Yunusobod",
+    status: "available",
   },
   {
     id: "demo-2",
@@ -14,6 +15,7 @@ const listings = [
     price: 560,
     address: "Buyuk Ipak Yoli",
     district: "Mirzo Ulugbek",
+    status: "available",
   },
   {
     id: "demo-3",
@@ -22,9 +24,10 @@ const listings = [
     price: 390,
     address: "Chilonzor 9",
     district: "Chilonzor",
+    status: "taken",
   },
 ];
 
 export async function GET() {
-  return Response.json(listings);
+  return Response.json(listings.filter((item) => item.status === "available"));
 }

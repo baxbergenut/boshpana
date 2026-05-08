@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from telegram.ext import ContextTypes
-from db import get_user, create_user, update_user_type, update_user_phone, update_user_fee, get_user_listings, get_listing_photos, update_listing_status, delete_listing
+from db import get_user, create_user, update_user_type, update_user_phone, update_user_fee, get_user_listings, get_listing_photos, update_listing_status, delete_listing, get_listing_by_id
 from config import config
 from listing_conversation import listing_conversation_handler, CREATE_LISTING_TEXT, AMENITY_LIST, TENANT_PREFS_LIST
 
@@ -54,10 +54,21 @@ async def process_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         _, listing_id, next_status = query.data.split(":", 2)
         pool = context.bot_data.get("pool")
         result = await update_listing_status(pool, listing_id, query.from_user.id, next_status)
-        if result.endswith("1"):
-            await query.message.reply_text("Holat yangilandi.")
-        else:
+        if not result.endswith("1"):
             await query.message.reply_text("Holat yangilanmadi. Qayta urinib ko'ring.")
+            return
+
+        row = await get_listing_by_id(pool, listing_id, query.from_user.id)
+        if not row:
+            await query.message.reply_text("E'lon topilmadi.")
+            return
+
+        caption = build_listing_caption(row)
+        actions = build_listing_actions(row)
+        if query.message.photo:
+            await query.edit_message_caption(caption=caption, reply_markup=actions)
+        else:
+            await query.edit_message_text(text=caption, reply_markup=actions)
         return
 
     if query.data.startswith("listing_delete:"):

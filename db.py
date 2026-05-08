@@ -118,6 +118,17 @@ async def get_user_listings(pool, owner_id):
     )
     return await pool.fetch(query, owner_id)
 
+async def get_listing_by_id(pool, listing_id, owner_id):
+    query = (
+        "SELECT id, status, price, currency, price_per_person, price_negotiable, rooms, floor, total_floors, "
+        "area_sqm, district, address, lon, lat, for_boys, for_girls, for_families, "
+        "max_tenants, needed_tenants, utils_included, has_wifi, has_washing_machine, "
+        "has_fridge, has_ac, has_heating, has_parking, has_elevator, has_furniture, "
+        "description, created_at "
+        "FROM listings WHERE id = $1 AND owner_id = $2"
+    )
+    return await pool.fetchrow(query, listing_id, owner_id)
+
 async def get_listing_photos(pool, listing_id):
     query = (
         "SELECT telegram_file_id FROM listing_photos "
