@@ -193,9 +193,13 @@
 }
 
 .photoStrip {
-  display: grid;
+  display: flex;
   gap: 12px;
   width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .photoFrame {
@@ -203,6 +207,9 @@
   overflow: hidden;
   background: #f0eee8;
   width: 100%;
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,6 +220,19 @@
   height: auto;
   object-fit: contain;
   display: block;
+}
+
+.photoIndex {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
 }
 
 .photoFallback {

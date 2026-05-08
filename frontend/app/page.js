@@ -466,6 +466,9 @@ export default function Home() {
                       ) : (
                         <div className={styles.photoFallback}>Rasm</div>
                       )}
+                      <div className={styles.photoIndex}>
+                        {index + 1}/{selectedListing.photos.length}
+                      </div>
                     </div>
                   ))}
                 </div>
