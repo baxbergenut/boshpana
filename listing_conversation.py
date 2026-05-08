@@ -200,33 +200,16 @@ async def handle_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     district = query.data.replace("district_", "").replace("_", " ")
     context.user_data["listing"]["district"] = district
-    # after district, ask for address (optional), then location
+    # after district, ask for address
     await query.edit_message_text(
-        "Manzilni kiriting (ko'cha, uy raqami) yoki o'tkazib yuborish.",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⏭ O'tkazib yuborish", callback_data="skip_address")]
-        ])
+        "Manzilni kiriting (ko'cha, uy raqami)."
     )
     return ADDRESS
 
 async def handle_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["listing"]["address"] = update.message.text
     await update.message.reply_text(
-        "Lokatsiyangizni yuboring 📍\nYoki o'tkazib yuborish mumkin.",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⏭ O'tkazib yuborish", callback_data="skip_location")]
-        ])
-    )
-    return LOCATION
-
-async def skip_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(
-        "Lokatsiyangizni yuboring 📍\nYoki o'tkazib yuborish mumkin.",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⏭ O'tkazib yuborish", callback_data="skip_location")]
-        ])
+        "Lokatsiyangizni yuboring 📍"
     )
     return LOCATION
 
@@ -235,13 +218,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["listing"]["lon"] = update.message.location.longitude
     await update.message.reply_text("✅ Lokatsiya saqlandi!")
     # proceed to tenant preferences next
-    await ask_tenant_prefs(update, context)
-    return TENANT_PREFS
-
-async def skip_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    # proceed to tenant preferences even if location skipped
     await ask_tenant_prefs(update, context)
     return TENANT_PREFS
 
@@ -523,12 +499,10 @@ def listing_conversation_handler():
             AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_area)],
             DISTRICT: [CallbackQueryHandler(handle_district, pattern="^district_")],
             ADDRESS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_address),
-                CallbackQueryHandler(skip_address, pattern="^skip_address$")
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_address)
             ],
             LOCATION: [
-                MessageHandler(filters.LOCATION, handle_location),
-                CallbackQueryHandler(skip_location, pattern="^skip_location$")
+                MessageHandler(filters.LOCATION, handle_location)
             ],
             TENANT_PREFS: [CallbackQueryHandler(handle_tenant_prefs, pattern="^tenant_|^tenant_prefs_done$")],
             MAX_TENANTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_max_tenants)],
