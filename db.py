@@ -131,12 +131,17 @@ async def get_listing_by_id(pool, listing_id, owner_id):
 
 async def get_public_listing_by_id(pool, listing_id):
     query = (
-        "SELECT id, status, price, currency, price_per_person, price_negotiable, rooms, floor, total_floors, "
-        "area_sqm, district, address, lon, lat, for_boys, for_girls, for_families, shared, "
-        "max_tenants, needed_tenants, utils_included, has_wifi, has_washing_machine, "
-        "has_fridge, has_ac, has_heating, has_parking, has_elevator, has_furniture, "
-        "description, created_at "
-        "FROM listings WHERE id = $1 AND status = 'available'"
+        "SELECT listings.id, listings.status, listings.price, listings.currency, "
+        "listings.price_per_person, listings.price_negotiable, listings.rooms, listings.floor, "
+        "listings.total_floors, listings.area_sqm, listings.district, listings.address, "
+        "listings.lon, listings.lat, listings.for_boys, listings.for_girls, listings.for_families, "
+        "listings.shared, listings.max_tenants, listings.needed_tenants, listings.utils_included, "
+        "listings.has_wifi, listings.has_washing_machine, listings.has_fridge, listings.has_ac, "
+        "listings.has_heating, listings.has_parking, listings.has_elevator, listings.has_furniture, "
+        "listings.description, listings.created_at, users.username, users.phone "
+        "FROM listings "
+        "JOIN users ON users.id = listings.owner_id "
+        "WHERE listings.id = $1 AND listings.status = 'available'"
     )
     return await pool.fetchrow(query, listing_id)
 

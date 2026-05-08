@@ -179,6 +179,23 @@ const formatValue = (value, fallback = "-") => {
   return String(value);
 };
 
+const sanitizePhone = (phone) => {
+  if (!phone) {
+    return "";
+  }
+
+  return phone.replace(/[^+0-9]/g, "");
+};
+
+const buildTelegramLink = (username) => {
+  if (!username) {
+    return "";
+  }
+
+  const clean = username.startsWith("@") ? username.slice(1) : username;
+  return clean ? `https://t.me/${clean}` : "";
+};
+
 export default function Home() {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
@@ -415,7 +432,7 @@ export default function Home() {
         aria-live="polite"
       >
         <div className={styles.detailHeader}>
-          <div>
+          <div className={styles.detailHeaderInfo}>
             <div className={styles.detailTitle}>
               {selectedListing
                 ? formatPrice(
@@ -433,14 +450,38 @@ export default function Home() {
               </div>
             )}
           </div>
-          <button
-            type="button"
-            className={styles.detailClose}
-            onClick={handleCloseDetails}
-            aria-label="Close details"
-          >
-            x
-          </button>
+          <div className={styles.detailHeaderActions}>
+            {selectedListing && (
+              <div className={styles.detailActionButtons}>
+                {selectedListing.owner_phone && (
+                  <a
+                    className={styles.detailActionButton}
+                    href={`tel:${sanitizePhone(selectedListing.owner_phone)}`}
+                  >
+                    Call
+                  </a>
+                )}
+                {selectedListing.owner_username && (
+                  <a
+                    className={`${styles.detailActionButton} ${styles.detailActionButtonGhost}`}
+                    href={buildTelegramLink(selectedListing.owner_username)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Telegram
+                  </a>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              className={styles.detailClose}
+              onClick={handleCloseDetails}
+              aria-label="Close details"
+            >
+              x
+            </button>
+          </div>
         </div>
         <div className={styles.detailBody}>
           {detailsError && (

@@ -124,6 +124,8 @@ def _serialize_listing(row):
         "tenant_prefs": tenant_prefs,
         "amenities": amenities,
         "description": row["description"],
+        "owner_username": row["username"],
+        "owner_phone": row["phone"],
         "created_at": created_at.isoformat() if created_at else None,
     }
 
