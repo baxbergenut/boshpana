@@ -200,6 +200,8 @@
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  align-items: stretch;
+  padding-bottom: 4px;
 }
 
 .photoFrame {
@@ -208,6 +210,7 @@
   background: #f0eee8;
   width: 100%;
   flex: 0 0 100%;
+  min-height: 220px;
   scroll-snap-align: center;
   position: relative;
   display: flex;
