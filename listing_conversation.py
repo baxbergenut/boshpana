@@ -209,7 +209,7 @@ async def handle_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["listing"]["address"] = update.message.text
     await update.message.reply_text(
-        "Lokatsiyangizni yuboring 📍"
+        "Kvartira lokatsiyasini yuboring 📍"
     )
     return LOCATION
 

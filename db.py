@@ -132,3 +132,11 @@ async def get_map_listings(pool):
         "WHERE status = 'available' AND lat IS NOT NULL AND lon IS NOT NULL"
     )
     return await pool.fetch(query)
+
+async def update_listing_status(pool, listing_id, owner_id, status):
+    query = "UPDATE listings SET status = $1 WHERE id = $2 AND owner_id = $3"
+    return await pool.execute(query, status, listing_id, owner_id)
+
+async def delete_listing(pool, listing_id, owner_id):
+    query = "DELETE FROM listings WHERE id = $1 AND owner_id = $2"
+    return await pool.execute(query, listing_id, owner_id)

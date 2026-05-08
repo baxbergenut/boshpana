@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from telegram.ext import ContextTypes
-from db import get_user, create_user, update_user_type, update_user_phone, update_user_fee, get_user_listings, get_listing_photos
+from db import get_user, create_user, update_user_type, update_user_phone, update_user_fee, get_user_listings, get_listing_photos, update_listing_status, delete_listing
 from config import config
 from listing_conversation import listing_conversation_handler, CREATE_LISTING_TEXT, AMENITY_LIST, TENANT_PREFS_LIST
 
@@ -49,6 +49,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def process_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+
+    if query.data.startswith("listing_status:"):
+        _, listing_id, next_status = query.data.split(":", 2)
+        pool = context.bot_data.get("pool")
+        result = await update_listing_status(pool, listing_id, query.from_user.id, next_status)
+        if result.endswith("1"):
+            await query.message.reply_text("Holat yangilandi.")
+        else:
+            await query.message.reply_text("Holat yangilanmadi. Qayta urinib ko'ring.")
+        return
+
+    if query.data.startswith("listing_delete:"):
+        _, listing_id = query.data.split(":", 1)
+        pool = context.bot_data.get("pool")
+        result = await delete_listing(pool, listing_id, query.from_user.id)
+        if result.endswith("1"):
+            await query.message.delete()
+            await query.message.reply_text("E'lon o'chirildi.")
+        else:
+            await query.message.reply_text("E'lon o'chirilmadi. Qayta urinib ko'ring.")
+        return
 
     match query.data:
         case "type_tenant":
@@ -214,13 +235,12 @@ def build_listing_caption(row):
 
     needed_label = row["needed_tenants"] if row["needed_tenants"] else "Yo'q"
     currency = row.get("currency") or "USD"
-    price_unit = "Bir kishi uchun" if row.get("price_per_person") else "Umumiy"
+    price_suffix = " odam boshiga" if row.get("price_per_person") else ""
 
     return (
         f"📋 E'lon ma'lumoti:\n"
         f"📌 Holat: {status_label}\n"
-        f"💵 Narx: {row['price']} {currency}\n"
-        f"💵 Narx turi: {price_unit}\n"
+        f"💵 Narx: {row['price']} {currency}{price_suffix}\n"
         f"💬 Muzokaraga ochiq: {('Ha' if row['price_negotiable'] else 'Yo\'q')}\n"
         f"🚪 Xonalar: {row['rooms']}\n"
         f"🏢 Qavat: {row['floor']}/{row['total_floors']}\n"
@@ -234,6 +254,16 @@ def build_listing_caption(row):
         f"⚙️ Kommunal kiritilgan: {('Ha' if row['utils_included'] else 'Yo\'q')}\n"
         f"🏠 Qulayliklar: {', '.join(amenity_labels) or 'Yo\'q'}\n"
         f"📝 Tavsif: {row['description'] or 'Yo\'q'}"
+    )
+
+def build_listing_actions(row):
+    next_status = "taken" if row["status"] == "available" else "available"
+    status_label = "Band qilish" if next_status == "taken" else "Bo'shatish"
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton(status_label, callback_data=f"listing_status:{row['id']}:{next_status}")],
+            [InlineKeyboardButton("E'lonni o'chirish", callback_data=f"listing_delete:{row['id']}")],
+        ]
     )
 
 async def send_user_listings(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
@@ -254,15 +284,17 @@ async def send_user_listings(update: Update, context: ContextTypes.DEFAULT_TYPE,
     chat_id = update.effective_chat.id
     for row in listings:
         caption = build_listing_caption(row)
+        actions = build_listing_actions(row)
         photos = await get_listing_photos(pool, row["id"])
         if photos:
             await context.bot.send_photo(
                 chat_id=chat_id,
                 photo=photos[0]["telegram_file_id"],
                 caption=caption,
+                reply_markup=actions,
             )
         else:
-            await context.bot.send_message(chat_id=chat_id, text=caption)
+            await context.bot.send_message(chat_id=chat_id, text=caption, reply_markup=actions)
 
 async def handle_my_listings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pool = context.bot_data.get("pool")
