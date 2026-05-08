@@ -246,6 +246,20 @@ export default function Home() {
     setDetailsLoading(false);
   };
 
+  const handleCallClick = (phone) => {
+    if (!phone) return;
+    const cleaned = sanitizePhone(phone);
+    window.location.href = `tel:${cleaned}`;
+  };
+
+  const handleTelegramClick = (username) => {
+    if (!username) return;
+    const link = buildTelegramLink(username);
+    if (link) {
+      window.open(link, "_blank");
+    }
+  };
+
   useEffect(() => {
     const webApp = window?.Telegram?.WebApp;
 
@@ -454,22 +468,24 @@ export default function Home() {
             {selectedListing && (
               <div className={styles.detailActionButtons}>
                 {selectedListing.owner_phone && (
-                  <a
+                  <button
+                    type="button"
                     className={styles.detailActionButton}
-                    href={`tel:${sanitizePhone(selectedListing.owner_phone)}`}
+                    onClick={() => handleCallClick(selectedListing.owner_phone)}
                   >
                     Call
-                  </a>
+                  </button>
                 )}
                 {selectedListing.owner_username && (
-                  <a
+                  <button
+                    type="button"
                     className={`${styles.detailActionButton} ${styles.detailActionButtonGhost}`}
-                    href={buildTelegramLink(selectedListing.owner_username)}
-                    target="_blank"
-                    rel="noreferrer"
+                    onClick={() =>
+                      handleTelegramClick(selectedListing.owner_username)
+                    }
                   >
                     Telegram
-                  </a>
+                  </button>
                 )}
               </div>
             )}
